@@ -12,10 +12,21 @@ import os
 import glob
 import traceback
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
+# The real AI backend lives in chatbot_engine.py, which must sit next to this
+# file. Import is wrapped so a missing/broken backend (e.g. google-genai not
+# installed) degrades the AI panel gracefully instead of crashing the app.
+try:
+    import chatbot_engine as chatbot
+    CHATBOT_IMPORT_ERROR = None
+except Exception as e:  # noqa: BLE001 - any import-time failure should degrade, not crash
+    chatbot = None
+    CHATBOT_IMPORT_ERROR = str(e)
 
 # --------------------------------------------------------------------------
 # CONFIG
@@ -31,6 +42,17 @@ st.set_page_config(
 DATA_DIR = "data"        # folder the app scans for CSVs, e.g. data/*.csv
 VIDEO_DIR = "videos"     # folder the app scans for matching .mp4 files
 REQUIRED_COLUMNS = ["Frame", "Tracking_ID", "Class"]
+
+# chatbot_engine.py has its own idea of where CSVs/videos live (OUTPUT_FOLDER
+# / INPUT_VIDEO_FOLDER, originally "output_folder" / "input_videos"). Point
+# it at the exact same folders this app uses so a CSV loaded here is
+# immediately visible to the chatbot's tools (summarize_traffic,
+# compare_videos, get_processing_status, ...), and vice versa.
+if chatbot is not None:
+    chatbot.OUTPUT_FOLDER = Path(DATA_DIR).resolve()
+    chatbot.INPUT_VIDEO_FOLDER = Path(VIDEO_DIR).resolve()
+    chatbot.OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+    chatbot.INPUT_VIDEO_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Recognized vehicle classes the KPI row cares about. Anything else in the
 # 'Class' column still shows up in the charts, it's just not pinned to a card.
@@ -95,6 +117,25 @@ CUSTOM_CSS = """
 """
 
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+
+def get_gemini_api_key() -> str | None:
+    """Resolve the Gemini API key from (in order): Streamlit secrets, an
+    environment variable, or a manual sidebar entry the user typed this
+    session. Never raises — a missing secrets.toml is a normal setup.
+    """
+    try:
+        key = st.secrets.get("GEMINI_API_KEY")
+        if key:
+            return key
+    except Exception:
+        pass
+
+    env_key = os.getenv("GEMINI_API_KEY")
+    if env_key:
+        return env_key
+
+    return st.session_state.get("manual_gemini_api_key") or None
 
 
 # --------------------------------------------------------------------------
@@ -283,7 +324,10 @@ def objects_over_time_chart(df: pd.DataFrame):
 
 
 # --------------------------------------------------------------------------
-# AI PROJECT INTELLIGENCE PANEL (mock assistant)
+# AI PROJECT INTELLIGENCE PANEL
+# generate_traffic_report() below is a deterministic, zero-cost quick-audit
+# shown for every loaded dataset. Free-form questions in the chat panel are
+# answered by the real Gemini backend in chatbot_engine.py.
 # --------------------------------------------------------------------------
 
 def generate_traffic_report(df: pd.DataFrame) -> list:
@@ -330,16 +374,32 @@ def generate_traffic_report(df: pd.DataFrame) -> list:
     return log
 
 
-def render_chat_panel(df: pd.DataFrame | None):
+def render_chat_panel(df: pd.DataFrame | None, source_label: str | None):
     st.markdown('<p class="panel-title">🤖 AI project intelligence</p>', unsafe_allow_html=True)
+
+    if chatbot is None:
+        st.error(
+            "The AI backend (chatbot_engine.py) could not be loaded, so this "
+            f"panel is disabled. Details: {CHATBOT_IMPORT_ERROR}"
+        )
+        return
+
+    st.session_state.setdefault("chat_messages", [])
+    st.session_state.setdefault("chat_interaction_id", None)
+    st.session_state.setdefault("chat_seeded_for", None)
+
+    api_key = get_gemini_api_key()
 
     with st.container(height=300, border=True):
         if df is None:
             with st.chat_message("assistant"):
-                st.write("Awaiting a validated dataset. Load a CSV from the sidebar to generate a report.")
+                st.write("Awaiting a validated dataset. Load a CSV from the sidebar to get started.")
         else:
+            # Deterministic, zero-cost quick audit — always shown fresh for
+            # whatever dataset is currently loaded, independent of the
+            # Gemini-backed conversation below.
             with st.chat_message("assistant"):
-                st.write("Dataset loaded. Here is the automated audit:")
+                st.write("Dataset loaded. Quick diagnostics:")
                 for tag, message in generate_traffic_report(df):
                     css_class = {"ok": "tag-ok", "warn": "tag-warn", "info": "tag-info"}[tag]
                     label = {"ok": "OK", "warn": "WARN", "info": "INFO"}[tag]
@@ -347,16 +407,40 @@ def render_chat_panel(df: pd.DataFrame | None):
                         f'<p class="log-line"><span class="log-tag {css_class}">[{label}]</span>{message}</p>',
                         unsafe_allow_html=True,
                     )
+                if not api_key:
+                    st.markdown(
+                        '<p class="log-line"><span class="log-tag tag-warn">[WARN]</span>'
+                        "No Gemini API key configured — free-form questions below won't work until one is set "
+                        "(sidebar, secrets.toml, or the GEMINI_API_KEY environment variable).</p>",
+                        unsafe_allow_html=True,
+                    )
+
+            # Real conversation history with the Gemini-backed assistant.
+            for turn in st.session_state.chat_messages:
+                with st.chat_message(turn["role"]):
+                    st.write(turn["content"])
 
     prompt = st.chat_input("Ask the assistant about this dataset...", disabled=(df is None))
     if prompt:
-        with st.chat_message("user"):
-            st.write(prompt)
-        with st.chat_message("assistant"):
-            st.write(
-                "This is a mock assistant wired up for the demo UI. "
-                "Swap `generate_traffic_report` for a real model call to answer free-form questions like this one."
-            )
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+
+        # Nudge the assistant toward the dataset currently open in the
+        # dashboard so the user doesn't have to name the file every time.
+        contextual_prompt = (
+            f"(Dataset currently open in the dashboard: {source_label}.)\n{prompt}"
+            if source_label
+            else prompt
+        )
+
+        answer, new_interaction_id = chatbot.process_query(
+            contextual_prompt,
+            api_key,
+            st.session_state.chat_interaction_id,
+        )
+
+        st.session_state.chat_messages.append({"role": "assistant", "content": answer})
+        st.session_state.chat_interaction_id = new_interaction_id
+        st.rerun()
 
 
 # --------------------------------------------------------------------------
@@ -366,10 +450,11 @@ def render_chat_panel(df: pd.DataFrame | None):
 def render_sidebar():
     st.sidebar.title("🛰️ Tracking console")
     st.sidebar.markdown("Navigation")
-    st.sidebar.radio(
+    view = st.sidebar.radio(
         "View",
         ["Dashboard", "Dataset explorer", "About"],
         label_visibility="collapsed",
+        key="nav_view",
     )
     st.sidebar.divider()
 
@@ -388,6 +473,15 @@ def render_sidebar():
         if uploaded is not None:
             file_source = uploaded
             source_label = uploaded.name
+            # Also persist a copy into DATA_DIR so the chatbot's file-based
+            # tools (which scan disk, not Streamlit's in-memory upload) can
+            # find and analyze this exact dataset too.
+            try:
+                os.makedirs(DATA_DIR, exist_ok=True)
+                with open(os.path.join(DATA_DIR, uploaded.name), "wb") as f:
+                    f.write(uploaded.getvalue())
+            except OSError:
+                pass  # non-fatal: dashboard still works, chatbot just won't see this copy
     else:
         local_files = discover_local_csv_files(DATA_DIR)
         if not local_files:
@@ -397,7 +491,17 @@ def render_sidebar():
             file_source = os.path.join(DATA_DIR, selected)
             source_label = selected
 
-    return file_source, source_label
+    if chatbot is not None and not get_gemini_api_key():
+        st.sidebar.divider()
+        st.sidebar.subheader("AI assistant")
+        st.sidebar.text_input(
+            "Gemini API key",
+            type="password",
+            key="manual_gemini_api_key",
+            help="Not found in secrets.toml or the environment. Paste one here to enable the AI panel for this session only.",
+        )
+
+    return view, file_source, source_label
 
 
 def render_status_indicator(is_connected: bool):
@@ -462,6 +566,73 @@ def render_kpi_row(df: pd.DataFrame):
             )
 
 
+def render_dataset_explorer(df: pd.DataFrame | None, source_label: str | None):
+    st.title("Dataset explorer")
+    st.caption("Inspect the raw tracking rows behind the dashboard's KPIs and charts.")
+
+    if df is None:
+        render_empty_state()
+        return
+
+    st.markdown(f"**Loaded file:** `{source_label}`  •  **Rows:** {len(df):,}")
+
+    # Per-column filters, independent of the sidebar's class filter so the
+    # explorer can be used to dig into a track/frame regardless of the
+    # dashboard's current KPI filter selection.
+    col1, col2 = st.columns(2)
+    with col1:
+        class_options = sorted(df["Class"].dropna().unique().tolist())
+        classes = st.multiselect("Filter by class", class_options, default=class_options)
+    with col2:
+        track_options = sorted(df["Tracking_ID"].dropna().unique().tolist())
+        track_id = st.selectbox("Jump to a Tracking_ID", ["All"] + [str(t) for t in track_options])
+
+    explorer_df = df[df["Class"].isin(classes)] if classes else df
+    if track_id != "All":
+        explorer_df = explorer_df[explorer_df["Tracking_ID"].astype(str) == track_id]
+
+    st.dataframe(explorer_df.sort_values(["Frame", "Tracking_ID"]), use_container_width=True, height=360)
+
+    st.divider()
+    st.markdown('<p class="panel-title">Per-track summary</p>', unsafe_allow_html=True)
+    track_summary = (
+        df.groupby("Tracking_ID")
+        .agg(Class=("Class", "first"), First_Frame=("Frame", "min"), Last_Frame=("Frame", "max"), Detections=("Frame", "count"))
+        .reset_index()
+        .sort_values("Tracking_ID")
+    )
+    st.dataframe(track_summary, use_container_width=True, height=260)
+
+
+def render_about_page():
+    st.title("About this project")
+    st.caption("CSE445 Group 07 — ML-based object tracking dashboard.")
+
+    st.markdown(
+        """
+        This dashboard visualizes YOLOv8-based vehicle detection and tracking
+        output from a traffic video dataset. It is the front-end component of
+        a larger pipeline, where teammates handle model training and video
+        processing separately.
+
+        **Expected data contract**
+
+        Each tracking CSV must contain the following columns:
+
+        - `Frame` — the frame index a detection belongs to
+        - `Tracking_ID` — a persistent identifier for a tracked object
+        - `Class` — the detected object class (e.g. car, truck, bus, motorcycle)
+
+        **Views**
+
+        - **Dashboard** — video playback, KPI cards, and summary charts.
+        - **Dataset explorer** — raw row-level inspection, per-class and
+          per-track filtering, and a per-track detection summary.
+        - **About** — this page.
+        """
+    )
+
+
 def render_empty_state():
     st.markdown("### Awaiting data")
     st.write(
@@ -477,7 +648,7 @@ def render_error_state(errors: list):
 
 
 def main():
-    file_source, source_label = render_sidebar()
+    view, file_source, source_label = render_sidebar()
 
     df = None
     errors = []
@@ -485,8 +656,20 @@ def main():
         df, errors = load_tracking_csv(file_source, source_label)
 
     render_status_indicator(is_connected=df is not None)
+
+    # "About" doesn't depend on data state, so route it before the class
+    # filter (which only makes sense once a dataset is loaded) is rendered.
+    if view == "About":
+        render_about_page()
+        return
+
     selected_classes = render_class_filter(df)
 
+    if view == "Dataset explorer":
+        render_dataset_explorer(df, source_label)
+        return
+
+    # view == "Dashboard"
     st.title("Object tracking intelligence dashboard")
     st.caption("Live review of ML-generated tracking streams and per-frame analytics.")
 
@@ -510,7 +693,7 @@ def main():
         st.plotly_chart(class_distribution_chart(filtered_df), use_container_width=True)
         st.plotly_chart(objects_over_time_chart(filtered_df), use_container_width=True)
     with right:
-        render_chat_panel(filtered_df)
+        render_chat_panel(filtered_df, source_label)
 
 
 if __name__ == "__main__":

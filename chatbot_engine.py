@@ -60,9 +60,9 @@ VIDEO_EXTENSIONS = {
 }
 
 REQUIRED_CSV_COLUMNS = {
-    "frame_number",
-    "track_id",
-    "class_name",
+    "Frame",
+    "Tracking_ID",
+    "Class",
 }
 
 
@@ -544,9 +544,9 @@ def calculate_traffic_statistics(
 
     dataframe = dataframe.dropna(
         subset=[
-            "frame_number",
-            "track_id",
-            "class_name",
+            "Frame",
+            "Tracking_ID",
+            "Class",
         ]
     )
 
@@ -562,18 +562,18 @@ def calculate_traffic_statistics(
         }
 
     frame_counts = (
-        dataframe.groupby("frame_number")
+        dataframe.groupby("Frame")
         .size()
         .sort_index()
     )
 
     unique_vehicle_rows = (
-        dataframe.sort_values("frame_number")
-        .drop_duplicates(subset=["track_id"])
+        dataframe.sort_values("Frame")
+        .drop_duplicates(subset=["Tracking_ID"])
     )
 
     vehicle_types = (
-        unique_vehicle_rows["class_name"]
+        unique_vehicle_rows["Class"]
         .astype(str)
         .str.lower()
         .value_counts()
@@ -608,13 +608,13 @@ def calculate_traffic_statistics(
         "csv_file": csv_path.name,
         "detections_found": True,
         "frames_in_csv": int(
-            dataframe["frame_number"].nunique()
+            dataframe["Frame"].nunique()
         ),
         "detection_records": int(
             len(dataframe)
         ),
         "unique_vehicles": int(
-            dataframe["track_id"].nunique()
+            dataframe["Tracking_ID"].nunique()
         ),
         "average_visible_vehicles_per_frame": round(
             average_visible,
