@@ -5,8 +5,8 @@ CSE445 Group 07 project: Develop a machine learning model to detect and track mo
 
 saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_BczDSbDts?usp=sharing
    
-##model saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
-
+##models saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
+    https://huggingface.co/RaihanGG2026/yolov8-drone-footage
 
 # 🚗 SmartVision: Real-Time Traffic Object Tracking & Analytics Control Center
 
