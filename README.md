@@ -2,7 +2,9 @@
 CSE445 Group 07 project: Develop a machine learning model to detect and track moving objects in real time using videos collected from online sources.
 
 ##TRACKED  VIDEOS  : link - https://drive.google.com/file/d/1DRJLhJYYd7Ji883IwJIJ98UFBXvLRSu6/view?usp=sharing
-   saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_BczDSbDts?usp=sharing
+
+saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_BczDSbDts?usp=sharing
+   
 ##model saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
 
 
