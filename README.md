@@ -3,7 +3,8 @@ CSE445 Group 07 project: Develop a machine learning model to detect and track mo
 
 ##TRACKED  VIDEOS  : link - https://drive.google.com/file/d/1DRJLhJYYd7Ji883IwJIJ98UFBXvLRSu6/view?usp=sharing
 
-Saved best.pt model: https://drive.google.com/file/d/1TI7VH8rlAJEGj4ARQqqtSOnlTpry1NBM/view?usp=sharing
+Saved best.pt yolov8 model: https://drive.google.com/file/d/1TI7VH8rlAJEGj4ARQqqtSOnlTpry1NBM/view?usp=sharing
+
 saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_BczDSbDts?usp=sharing
    
 ##models saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
