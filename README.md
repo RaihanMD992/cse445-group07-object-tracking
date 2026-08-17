@@ -10,7 +10,7 @@ saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_Bcz
 ##models saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
     https://huggingface.co/RaihanGG2026/yolov8-drone-footage
 
-# 🚗 SmartVision: Real-Time Traffic Object Tracking & Analytics Control Center
+#  SmartVision: Real-Time Traffic Object Tracking & Analytics Control Center
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
 ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-orange?logo=opencv&logoColor=white)
@@ -26,7 +26,7 @@ You can view our core processed traffic tracking video directly via cloud stream
 
 ---
 
-### 📊 Project Highlights & Verified Metrics
+### Project Highlights & Verified Metrics
 FROM 1st video: 
 Total Tracked Traffic Units:** 330 verified entities.
 * Vehicle Breakdown: Cars: 185
@@ -44,13 +44,14 @@ Total Tracked Traffic Units:** 330 verified entities.
 * **Frontend Dashboard:** Built using Next.Js and **Plotly Express** for dynamic data visualization and AI chatbot auditing.
 
 
-### 👥 Team Contributions & Roles
+###  Team Contributions & Roles
 #Raihan Mahmud-2222642642— Data & ML Lead: Managed dataset sourcing (Roboflow & Pexels), core YOLOv8 model training (`best.pt`), video inference pipeline, and Hugging Face MLOps model registry deployment.
+
 #MD Emran Hossain — Frontend UI Lead: Designed and structured the core layout, Frontend, theme styling, Plotly visual charts, and sidebar repository integrations.
 
 
 
-### 🚀 Getting Started Locally
+###  Getting Started Locally
 1. Clone the repository:
    ```bash
    git clone [https://github.com/RaihanMD992/cse445-group07-object-tracking.git](https://github.com/RaihanMD992/cse445-group07-object-tracking.git)
