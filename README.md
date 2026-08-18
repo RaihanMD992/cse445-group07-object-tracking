@@ -10,7 +10,7 @@ saved videos: https://drive.google.com/drive/folders/1Q-iCJkx8oJXgLWACZ8jltS_Bcz
 ##models saved at HUGGING FACE : https://huggingface.co/RaihanGG2026/cse445-hardhat-tracker/tree/main 
     https://huggingface.co/RaihanGG2026/yolov8-drone-footage
 
-#  SmartVision: Real-Time Traffic Object Tracking & Analytics Control Center
+#  SmartVision: Real-Time Object Tracking & Analytics Control Center
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
 ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-orange?logo=opencv&logoColor=white)
