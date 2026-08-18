@@ -4,3 +4,9 @@ opencv-python>=4.8.0
 pandas>=2.0.0
 torch>=2.0.0
 huggingface_hub
+fastapi
+uvicorn[standard]
+pandas
+google-genai
+python-dotenv
+python-multipart
