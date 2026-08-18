@@ -8,9 +8,9 @@ from support.detection import load_tracking_model, process_video_tracking
 from support.utils import save_telemetry_csv, print_project_summary
 
 def main():
-    print("\n========================================================")
+ 
     print(" CSE445: Multi-Domain Real-Time Object Tracker Engine ")
-    print("========================================================\n")
+  
 
     # Define paths according to required repo structure
     root_dir = os.path.dirname(os.path.abspath(__file__))
