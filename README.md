@@ -29,6 +29,7 @@ Full-Stack Dashboard: Built with Next.js (frontend) and FastAPI (backend) for re
 Our project directly maps core concepts from the CSE445 Machine Learning curriculum into a production scaled system :
 
 **1.Supervised Learning & Dataset Pipeline:**
+
 Framework: Frame inputs ($X$) map to annotated targets ($Y$) representing multi-class categories and spatial bounding box bounds.
 
 Data Splits & Optimization: Datasets are structured into Training (weight updates), Validation (hyperparameter tuning), and Test sets (out-of-sample evaluation). Data augmentations (Mosaic, MixUp) mitigate overfitting and lower model variance.
