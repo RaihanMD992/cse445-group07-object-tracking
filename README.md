@@ -27,14 +27,22 @@ Natural Language Telemetry Assistant (Gemini LLM): An integrated LLM agent that 
 Full-Stack Dashboard: Built with Next.js (frontend) and FastAPI (backend) for real-time KPI metrics, streaming video player controls, and dynamic telemetry chart filters.
 
 Our project directly maps core concepts from the CSE445 Machine Learning curriculum into a production scaled system :
+
 **1.Supervised Learning & Dataset Pipeline:**
 Framework: Frame inputs ($X$) map to annotated targets ($Y$) representing multi-class categories and spatial bounding box bounds.
+
 Data Splits & Optimization: Datasets are structured into Training (weight updates), Validation (hyperparameter tuning), and Test sets (out-of-sample evaluation). Data augmentations (Mosaic, MixUp) mitigate overfitting and lower model variance.
+
 **2.Multi-Class Classification vs. Continuous Bounding Box Regression:**
+
 Classification Head: Predicts discrete probability distributions over classes (car, bus, truck, person, player) using cross-entropy evaluation.
+
 Regression Head: Predicts continuous bounding box bounds $[x_{\text{center}}, y_{\text{center}}, \text{width}, \text{height}]$ using Complete IoU (CIoU) Loss and Distribution Focal Loss (DFL).
+
 **3. Deep Learning, Backpropagation & Feature Scaling:**
+
 Architecture: Uses CSPDarknet backbone feature extraction and Path Aggregation Network (PANet) neck structures for multi-scale feature maps.
+
 Preprocessing: Input RGB frames ($0\text{--}255$) undergo intensity normalization to $[0, 1]$ to stabilize backpropagation gradients during optimization.
 
 # Live Demonstration & Portfolio
